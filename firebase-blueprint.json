@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user information and preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique identifier for the user." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "photoURL": { "type": "string", "description": "The user's profile photo URL." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created." }
+      },
+      "required": ["uid", "email"]
+    },
+    "ReadingHistory": {
+      "title": "Reading History",
+      "description": "Tracks Quran surahs read by the user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user." },
+        "surahName": { "type": "string", "description": "The name of the surah." },
+        "surahNumber": { "type": "number", "description": "The number of the surah." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When it was read." }
+      },
+      "required": ["userId", "surahName", "timestamp"]
+    },
+    "FavoriteTrack": {
+      "title": "Favorite Track",
+      "description": "Stores user's favorite music tracks.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user." },
+        "trackId": { "type": "string", "description": "The unique ID of the track." },
+        "trackTitle": { "type": "string", "description": "The title of the track." },
+        "addedAt": { "type": "string", "format": "date-time", "description": "When it was added to favorites." }
+      },
+      "required": ["userId", "trackId", "addedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents."
+    },
+    "/users/{userId}/history/{historyId}": {
+      "schema": "ReadingHistory",
+      "description": "User's Quran reading history."
+    },
+    "/users/{userId}/favorites/{favoriteId}": {
+      "schema": "FavoriteTrack",
+      "description": "User's favorite music tracks."
+    }
+  }
+}

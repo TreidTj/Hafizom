@@ -1,0 +1,7 @@
+{
+  "name": "Nur Neumorphic",
+  "description": "A spiritual and music application with a beautiful Neumorphic design, featuring Quran recitations, music, and user profiles.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
