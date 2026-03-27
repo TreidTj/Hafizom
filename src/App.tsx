@@ -153,12 +153,12 @@ const QuranTab = () => {
       exit={{ opacity: 0, y: -20 }}
       className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400"
     >
-      <p className="text-sm italic">Menu is currently empty</p>
+      <p className="text-sm italic">Меню пока пусто</p>
     </motion.div>
   );
 };
 
-import { SURAHS, SURAHS_ARABIC, RECITERS } from './constants';
+import { SURAHS, RECITERS } from './constants';
 
 // --- Tab Components ---
 const RecitationTab = () => {
@@ -182,8 +182,7 @@ const RecitationTab = () => {
 
   const filteredSurahs = SURAHS.map((surah, index) => ({ surah, index }))
     .filter(({ surah, index }) => 
-      surah.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      SURAHS_ARABIC[index].includes(searchQuery)
+      surah.includes(searchQuery)
     );
 
   const logReading = async (surahName: string, surahNumber: number) => {
@@ -224,7 +223,7 @@ const RecitationTab = () => {
       className="space-y-6"
     >
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-ink">Recitations</h2>
+        <h2 className="text-2xl font-bold text-ink">Коран</h2>
         <NeumorphicButton className="p-1 rounded-full overflow-hidden w-12 h-12 flex items-center justify-center" onClick={() => setShowReciterModal(true)}>
           {selectedReciter.image ? (
             <img src={selectedReciter.image} alt={selectedReciter.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -238,7 +237,7 @@ const RecitationTab = () => {
       <NeumorphicCard className="space-y-6">
         {isBuffering && !audioError && (
           <div className="p-2 text-[10px] text-blue-500 font-bold uppercase tracking-widest text-center animate-pulse">
-            Buffering...
+            Загрузка...
           </div>
         )}
         {audioError && (
@@ -257,7 +256,7 @@ const RecitationTab = () => {
                 }}
                 className="text-[10px] uppercase tracking-wider font-bold bg-white/50 px-3 py-1 rounded-full shadow-sm hover:bg-white transition-colors"
               >
-                Retry
+                Повторить
               </button>
             </div>
           </div>
@@ -276,15 +275,10 @@ const RecitationTab = () => {
           <div className={`${isPhotoExpanded ? 'text-center' : 'flex-1'}`}>
             <h3 className={`${isPhotoExpanded ? 'text-xl' : 'text-lg'} font-bold text-ink`}>
               <span className="text-blue-500 mr-2">{currentSurahIndex + 1}.</span>
-              {SURAHS[currentSurahIndex]} <span className="font-normal text-gray-500 ml-1" dir="rtl">({SURAHS_ARABIC[currentSurahIndex]})</span>
+              {SURAHS[currentSurahIndex]}
             </h3>
             <p className="text-sm text-gray-400">{selectedReciter.name}</p>
           </div>
-          {!isPhotoExpanded && (
-            <NeumorphicButton className="p-3 rounded-full" onClick={addToFavorites}>
-              <Bell size={18} className="text-gray-400" />
-            </NeumorphicButton>
-          )}
         </div>
 
         <div className="flex justify-center items-center gap-6">
@@ -340,7 +334,7 @@ const RecitationTab = () => {
           <Search size={18} className="text-gray-400" />
           <input 
             type="text" 
-            placeholder="Search Surah..." 
+            placeholder="Поиск суры..." 
             className="bg-transparent border-none outline-none text-ink w-full text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -363,9 +357,8 @@ const RecitationTab = () => {
                   <span className={`text-xs font-bold w-6 ${isActive ? 'text-blue-500' : 'text-gray-300'}`}>{(index + 1).toString().padStart(2, '0')}</span>
                   <div>
                     <div className={`font-bold ${isActive ? 'text-blue-600' : 'text-ink'}`}>
-                      {surah} <span className="font-normal text-gray-500 ml-1" dir="rtl">({SURAHS_ARABIC[index]})</span>
+                      {surah}
                     </div>
-                    <div className="text-[10px] text-gray-400 uppercase tracking-widest">Meccan • 7 Verses</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -407,7 +400,7 @@ const RecitationTab = () => {
               onClick={e => e.stopPropagation()}
             >
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-ink">Select Reciter</h3>
+                <h3 className="text-xl font-bold text-ink">Выберите чтеца</h3>
                 <NeumorphicButton className="p-2 rounded-full" onClick={() => setShowReciterModal(false)}>
                   <Settings size={18} />
                 </NeumorphicButton>
@@ -464,7 +457,7 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 1024 * 1024) { // 1MB limit for base64 storage
-        setLoginError("Image too large. Please select a smaller image (< 1MB).");
+        setLoginError("Изображение слишком большое. Пожалуйста, выберите изображение меньше 1 МБ.");
         return;
       }
       const reader = new FileReader();
@@ -493,7 +486,7 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
       setIsEditing(false);
     } catch (error) {
       console.error("Update profile failed", error);
-      setLoginError("Failed to update profile.");
+      setLoginError("Не удалось обновить профиль.");
     } finally {
       setIsUpdating(false);
     }
@@ -518,9 +511,9 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
       }, { merge: true });
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
-        setLoginError("Popup closed. Please try again.");
+        setLoginError("Окно закрыто. Пожалуйста, попробуйте еще раз.");
       } else {
-        setLoginError("Login failed. Please check your connection.");
+        setLoginError("Ошибка входа. Пожалуйста, проверьте подключение.");
       }
       console.error("Login failed", error);
     } finally {
@@ -544,7 +537,7 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
       className="space-y-8 pb-20"
     >
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-ink">My Profile</h2>
+        <h2 className="text-2xl font-bold text-ink">Мой профиль</h2>
         <div className="flex gap-3">
           <NeumorphicButton className="p-3 rounded-full" onClick={toggleTheme}>
             {theme === 'light' ? <Moon size={20} className="text-blue-600" /> : <Sun size={20} className="text-yellow-500" />}
@@ -618,7 +611,7 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
                   value={newName} 
                   onChange={(e) => setNewName(e.target.value)}
                   className="w-full bg-bg shadow-[var(--shadow-btn-inset)] rounded-xl px-4 py-2 text-center text-ink focus:outline-none"
-                  placeholder="Enter your name"
+                  placeholder="Введите ваше имя"
                 />
                 <p className="text-gray-400 text-sm">{user.email}</p>
               </div>
@@ -648,7 +641,7 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
               {isLoggingIn ? (
                 <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                "Sign In with Google"
+                "Войти через Google"
               )}
             </NeumorphicButton>
           </div>
@@ -728,7 +721,7 @@ function AppContent() {
         playPromise.catch(error => {
           if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
             console.error("Playback error:", error);
-            setAudioError("Playback failed. The server might be busy.");
+            setAudioError("Ошибка воспроизведения. Возможно, сервер перегружен.");
             setIsPlaying(false);
           }
         });
@@ -739,7 +732,7 @@ function AppContent() {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: SURAHS[currentSurahIndex],
           artist: selectedReciter.name,
-          album: 'Quran Recitation',
+          album: 'Чтение Корана',
           artwork: [
             { src: selectedReciter.image || '', sizes: '512x512', type: 'image/jpeg' }
           ]
@@ -854,7 +847,7 @@ function AppContent() {
               const currentSrc = audio.currentSrc || audio.src;
               console.error("Audio element error:", error, "URL:", currentSrc);
               
-              let message = `Ошибка загрузки. Попробуйте нажать "Retry" или сменить чтеца.`;
+              let message = `Ошибка загрузки. Попробуйте нажать "Повторить" или сменить чтеца.`;
               if (error?.code === 1) message = "Воспроизведение прервано.";
               if (error?.code === 2) message = "Ошибка сети. Проверьте интернет.";
               if (error?.code === 3) message = "Ошибка декодирования аудио.";
@@ -899,7 +892,7 @@ function AppContent() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Now Playing</div>
+                      <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Сейчас играет</div>
                       {isPlaying && (
                         <div className="flex gap-0.5 items-end h-2">
                           <motion.div animate={{ height: [4, 8, 4] }} transition={{ repeat: Infinity, duration: 0.6 }} className="w-0.5 bg-blue-500 rounded-full" />
@@ -909,7 +902,7 @@ function AppContent() {
                       )}
                     </div>
                     <div className="text-sm font-black text-ink truncate tracking-tight">
-                      {SURAHS[currentSurahIndex]} <span className="font-normal text-gray-500 ml-1" dir="rtl">({SURAHS_ARABIC[currentSurahIndex]})</span>
+                      {SURAHS[currentSurahIndex]}
                     </div>
                     <div className="text-xs font-medium text-gray-500 truncate">{selectedReciter.name}</div>
                   </div>
@@ -948,19 +941,19 @@ function AppContent() {
               <NeumorphicCard className="flex justify-around items-center py-4 px-2 rounded-[2rem]">
                 <NeumorphicIconButton 
                   icon={Book} 
-                  label="Home" 
+                  label="Главная" 
                   onClick={() => setActiveTab('quran')} 
                   active={activeTab === 'quran'} 
                 />
                 <NeumorphicIconButton 
                   icon={Music} 
-                  label="Quran" 
+                  label="Коран" 
                   onClick={() => setActiveTab('music')} 
                   active={activeTab === 'music'} 
                 />
                 <NeumorphicIconButton 
                   icon={User} 
-                  label="Profile" 
+                  label="Профиль" 
                   onClick={() => setActiveTab('profile')} 
                   active={activeTab === 'profile'} 
                 />
