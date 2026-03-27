@@ -1,11 +1,16 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, orderBy, limit, getDocFromServer, FirestoreError } from 'firebase/firestore';
+import { initializeFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, orderBy, limit, getDocFromServer, FirestoreError } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+// Use initializeFirestore with long polling to fix connectivity issues in restricted networks
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, (firebaseConfig as any).firestoreDatabaseId);
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
