@@ -280,9 +280,21 @@ const RecitationTab = () => {
               <span className="text-blue-500 mr-2">{currentSurahIndex + 1}.</span>
               {SURAHS[currentSurahIndex]}
             </h3>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 flex items-center gap-2">
               {selectedReciter.name}
-              {selectedReciter.id === 'yasser_dossari' && selectedYear !== 'studio' && ` (${selectedYear})`}
+              {selectedReciter.id === 'yasser_dossari' && selectedReciter.years && (
+                <button 
+                  onClick={() => {
+                    const years = Object.keys(selectedReciter.years!);
+                    const currentIndex = years.indexOf(selectedYear);
+                    const nextIndex = (currentIndex + 1) % years.length;
+                    setSelectedYear(years[nextIndex]);
+                  }}
+                  className="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full hover:bg-blue-200 transition-colors"
+                >
+                  {selectedYear === 'studio' ? 'Studio' : selectedYear}
+                </button>
+              )}
             </p>
           </div>
         </div>
