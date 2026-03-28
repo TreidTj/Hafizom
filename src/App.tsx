@@ -41,6 +41,8 @@ interface AuthContextType {
 interface AudioContextType {
   selectedReciter: typeof RECITERS[0];
   setSelectedReciter: (reciter: typeof RECITERS[0]) => void;
+  selectedYear: string;
+  setSelectedYear: (year: string) => void;
   currentSurahIndex: number;
   setCurrentSurahIndex: (index: number) => void;
   isPlaying: boolean;
@@ -165,6 +167,7 @@ const RecitationTab = () => {
   const { user } = useContext(AuthContext);
   const { 
     selectedReciter, setSelectedReciter, 
+    selectedYear, setSelectedYear,
     currentSurahIndex,
     isPlaying, setIsPlaying,
     repeatMode, setRepeatMode,
@@ -277,7 +280,10 @@ const RecitationTab = () => {
               <span className="text-blue-500 mr-2">{currentSurahIndex + 1}.</span>
               {SURAHS[currentSurahIndex]}
             </h3>
-            <p className="text-sm text-gray-400">{selectedReciter.name}</p>
+            <p className="text-sm text-gray-400">
+              {selectedReciter.name}
+              {selectedReciter.id === 'yasser_dossari' && selectedYear !== 'studio' && ` (${selectedYear})`}
+            </p>
           </div>
         </div>
 
@@ -427,6 +433,22 @@ const RecitationTab = () => {
                   </NeumorphicCard>
                 ))}
               </div>
+              {selectedReciter.id === 'yasser_dossari' && selectedReciter.years && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-bold text-gray-500 mb-2">Выберите год:</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.keys(selectedReciter.years).map((year) => (
+                      <NeumorphicButton
+                        className={`p-2 text-xs ${selectedYear === year ? 'text-blue-600' : 'text-ink'}`}
+                        active={selectedYear === year}
+                        onClick={() => setSelectedYear(year)}
+                      >
+                        {year === 'studio' ? 'Studio' : year}
+                      </NeumorphicButton>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
@@ -662,6 +684,7 @@ function AppContent() {
 
   // Audio State moved to AppContent for persistence
   const [selectedReciter, setSelectedReciter] = useState(RECITERS[0]);
+  const [selectedYear, setSelectedYear] = useState<string>('studio');
   const [currentSurahIndex, setCurrentSurahIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [repeatMode, setRepeatMode] = useState<'off' | 'one' | 'all'>('off');
@@ -674,6 +697,9 @@ function AppContent() {
 
   const getAudioUrl = (reciter: typeof RECITERS[0], index: number) => {
     const surahNumber = (index + 1).toString().padStart(3, '0');
+    if (reciter.id === 'yasser_dossari' && reciter.years && reciter.years[selectedYear]) {
+      return reciter.years[selectedYear].replace('{surah}', surahNumber);
+    }
     return `${reciter.server}${surahNumber}.mp3`;
   };
 
@@ -806,6 +832,7 @@ function AppContent() {
     <AuthContext.Provider value={{ user, loading, history, favorites }}>
       <AudioContext.Provider value={{ 
         selectedReciter, setSelectedReciter,
+        selectedYear, setSelectedYear,
         currentSurahIndex, setCurrentSurahIndex,
         isPlaying, setIsPlaying,
         repeatMode, setRepeatMode,
