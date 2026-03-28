@@ -280,9 +280,9 @@ const RecitationTab = () => {
               <span className="text-blue-500 mr-2">{currentSurahIndex + 1}.</span>
               {SURAHS[currentSurahIndex]}
             </h3>
-            <p className="text-sm text-gray-400 flex items-center gap-2">
+            <p className={`text-sm text-gray-400 flex items-center gap-2 ${isPhotoExpanded ? 'justify-center' : ''}`}>
               {selectedReciter.name}
-              {selectedReciter.id === 'yasser_dossari' && selectedReciter.years && (
+              {selectedReciter.id === 'yasser' && selectedReciter.years && (
                 <button 
                   onClick={() => {
                     const years = Object.keys(selectedReciter.years!);
@@ -445,18 +445,20 @@ const RecitationTab = () => {
                   </NeumorphicCard>
                 ))}
               </div>
-              {selectedReciter.id === 'yasser_dossari' && selectedReciter.years && (
+              {selectedReciter.id === 'yasser' && selectedReciter.years && (
                 <div className="mt-4">
                   <h4 className="text-sm font-bold text-gray-500 mb-2">Выберите год:</h4>
                   <div className="grid grid-cols-3 gap-2">
                     {Object.keys(selectedReciter.years).map((year) => (
-                      <NeumorphicButton
-                        className={`p-2 text-xs ${selectedYear === year ? 'text-blue-600' : 'text-ink'}`}
-                        active={selectedYear === year}
-                        onClick={() => setSelectedYear(year)}
-                      >
-                        {year === 'studio' ? 'Studio' : year}
-                      </NeumorphicButton>
+                      <React.Fragment key={year}>
+                        <NeumorphicButton
+                          className={`p-2 text-xs w-full ${selectedYear === year ? 'text-blue-600' : 'text-ink'}`}
+                          active={selectedYear === year}
+                          onClick={() => setSelectedYear(year)}
+                        >
+                          {year === 'studio' ? 'Studio' : year}
+                        </NeumorphicButton>
+                      </React.Fragment>
                     ))}
                   </div>
                 </div>
@@ -709,7 +711,7 @@ function AppContent() {
 
   const getAudioUrl = (reciter: typeof RECITERS[0], index: number) => {
     const surahNumber = (index + 1).toString().padStart(3, '0');
-    if (reciter.id === 'yasser_dossari' && reciter.years && reciter.years[selectedYear]) {
+    if (reciter.id === 'yasser' && reciter.years && reciter.years[selectedYear]) {
       return reciter.years[selectedYear].replace('{surah}', surahNumber);
     }
     return `${reciter.server}${surahNumber}.mp3`;
@@ -749,9 +751,20 @@ function AppContent() {
   };
 
   // Audio Management Effect
+  const previousSrcRef = useRef<string | null>(null);
+  
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    const currentSrc = getAudioUrl(selectedReciter, currentSurahIndex);
+    
+    // Force load the new source if it changed
+    if (previousSrcRef.current !== currentSrc) {
+      previousSrcRef.current = currentSrc;
+      setCurrentTime(0);
+      audio.load();
+    }
 
     if (isPlaying) {
       const playPromise = audio.play();
@@ -784,7 +797,7 @@ function AppContent() {
     } else {
       audio.pause();
     }
-  }, [isPlaying, selectedReciter, currentSurahIndex, handleNext, handlePrev]);
+  }, [isPlaying, selectedReciter, selectedYear, currentSurahIndex, handleNext, handlePrev]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -858,8 +871,8 @@ function AppContent() {
         <NeumorphicContainer className="flex flex-col">
           {/* Persistent Audio Element */}
           <audio 
-            key={`${selectedReciter.id}-${currentSurahIndex}`}
             ref={audioRef} 
+            src={getAudioUrl(selectedReciter, currentSurahIndex)}
             onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
             onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
             onEnded={() => {
@@ -897,9 +910,7 @@ function AppContent() {
               setIsBuffering(false);
             }}
             preload="auto"
-          >
-            <source src={getAudioUrl(selectedReciter, currentSurahIndex)} />
-          </audio>
+          />
 
           {/* Main Content */}
           <main className="flex-1 p-6 pb-32 max-w-md mx-auto w-full">
@@ -911,7 +922,7 @@ function AppContent() {
           </main>
 
           {/* Mini Player for other tabs */}
-          {activeTab === 'profile' && (isPlaying || (currentTime > 0 && currentTime < duration)) && (
+          {activeTab !== 'music' && (isPlaying || (currentTime > 0 && currentTime < duration)) && (
             <motion.div 
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}

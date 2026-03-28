@@ -14,7 +14,22 @@ export const SURAHS = [
 ];
 
 export const RECITERS = [
-  { id: "yasser", name: "ياسر الدوسري", server: "https://server11.mp3quran.net/yasser/", image: "https://i.postimg.cc/Pr62XLjn/photo-2026-03-27-15-42-13.jpg" },
+  { 
+    id: "yasser", 
+    name: "ياسر الدوسري", 
+    server: "https://server11.mp3quran.net/yasser/", 
+    image: "https://i.postimg.cc/Pr62XLjn/photo-2026-03-27-15-42-13.jpg",
+    years: {
+      "studio": "https://server11.mp3quran.net/yasser/{surah}.mp3",
+      "1436": "https://server10.mp3quran.net/dossari/1436/{surah}.mp3",
+      "1437": "https://server7.mp3quran.net/dossari/1437/{surah}.mp3",
+      "1438": "https://server6.mp3quran.net/dossari/1438/{surah}.mp3",
+      "1439": "https://server9.mp3quran.net/dossari/1439/{surah}.mp3",
+      "1440": "https://server8.mp3quran.net/dossari/1440/{surah}.mp3",
+      "1441": "https://server11.mp3quran.net/dossari/1441/{surah}.mp3",
+      "1442": "https://server12.mp3quran.net/dossari/1442/{surah}.mp3"
+    }
+  },
   { id: "luhaidan", name: "محمد اللحيدان", server: "https://server8.mp3quran.net/lhdan/", image: "https://i.postimg.cc/5tYMfdQ2/photo-2026-03-27-16-17-48.jpg" },
   { id: "maher", name: "ماهر المعيقلي", server: "https://server12.mp3quran.net/maher/", image: "https://i.postimg.cc/5NLYNTvm/photo-2026-03-27-16-15-13.jpg" },
   { id: "salmi", name: "منصور السالمي", server: "https://server14.mp3quran.net/mansor/", image: "https://i.postimg.cc/766rYKPZ/photo-2026-03-27-18-08-44.jpg" },
@@ -33,21 +48,5 @@ export const RECITERS = [
   { id: "abbad", name: "فارس عباد", server: "https://server8.mp3quran.net/frs_a/", image: "https://www.mp3quran.net/images/reciters/fares_abbad.jpg" },
   { id: "juhany", name: "عبدالله الجهني", server: "https://server13.mp3quran.net/jhn/", image: "https://www.mp3quran.net/images/reciters/abdullah_al_juhany.jpg" },
   { id: "jalil", name: "خالد الجليل", server: "https://server10.mp3quran.net/jleel/", image: "https://www.mp3quran.net/images/reciters/khalid_al_jalil.jpg" },
-  { id: "balushi", name: "هزاع البلوشي", server: "https://server11.mp3quran.net/hazza/", image: "https://www.mp3quran.net/images/reciters/hazza_al_balushi.jpg" },
-  { 
-    id: "yasser_dossari", 
-    name: "ياسر الدوسري", 
-    server: "https://server16.mp3quran.net/dossari/", 
-    image: "",
-    years: {
-      "studio": "https://server16.mp3quran.net/dossari/{surah}.mp3",
-      "1436": "https://server10.mp3quran.net/dossari/1436/{surah}.mp3",
-      "1437": "https://server7.mp3quran.net/dossari/1437/{surah}.mp3",
-      "1438": "https://server6.mp3quran.net/dossari/1438/{surah}.mp3",
-      "1439": "https://server9.mp3quran.net/dossari/1439/{surah}.mp3",
-      "1440": "https://server8.mp3quran.net/dossari/1440/{surah}.mp3",
-      "1441": "https://server11.mp3quran.net/dossari/1441/{surah}.mp3",
-      "1442": "https://server12.mp3quran.net/dossari/1442/{surah}.mp3"
-    }
-  }
+  { id: "balushi", name: "هزاع البلوشي", server: "https://server11.mp3quran.net/hazza/", image: "https://www.mp3quran.net/images/reciters/hazza_al_balushi.jpg" }
 ];
