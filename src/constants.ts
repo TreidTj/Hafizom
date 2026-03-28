@@ -33,5 +33,6 @@ export const RECITERS = [
   { id: "abbad", name: "فارس عباد", server: "https://server8.mp3quran.net/frs_a/", image: "https://www.mp3quran.net/images/reciters/fares_abbad.jpg" },
   { id: "juhany", name: "عبدالله الجهني", server: "https://server13.mp3quran.net/jhn/", image: "https://www.mp3quran.net/images/reciters/abdullah_al_juhany.jpg" },
   { id: "jalil", name: "خالد الجليل", server: "https://server10.mp3quran.net/jleel/", image: "https://www.mp3quran.net/images/reciters/khalid_al_jalil.jpg" },
-  { id: "balushi", name: "هزاع البلوشي", server: "https://server11.mp3quran.net/hazza/", image: "https://www.mp3quran.net/images/reciters/hazza_al_balushi.jpg" }
+  { id: "balushi", name: "هزاع البلوشي", server: "https://server11.mp3quran.net/hazza/", image: "https://www.mp3quran.net/images/reciters/hazza_al_balushi.jpg" },
+  { id: "yasser_dossari", name: "Yasser Al-Dosari", server: "https://server16.mp3quran.net/dossari/", image: "" }
 ];
