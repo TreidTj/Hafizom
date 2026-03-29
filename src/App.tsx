@@ -792,9 +792,15 @@ function AppContent() {
   if (loading) {
     return (
       <NeumorphicContainer className="flex items-center justify-center">
-        <div className="w-16 h-16 rounded-full shadow-[var(--shadow-flat)] flex items-center justify-center animate-pulse">
-          <div className="w-8 h-8 rounded-full bg-blue-500 opacity-50"></div>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="text-5xl md:text-6xl font-arabic text-ink text-center px-4 leading-relaxed"
+          dir="rtl"
+        >
+          بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+        </motion.div>
       </NeumorphicContainer>
     );
   }

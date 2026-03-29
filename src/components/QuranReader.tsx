@@ -278,7 +278,19 @@ export default function QuranReader() {
   };
 
   if (loading && !activeSurah) {
-    return <div className="flex items-center justify-center h-full"><div className="animate-pulse text-blue-500 font-medium">Загрузка сур...</div></div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="text-5xl md:text-6xl font-arabic text-ink text-center px-4 leading-relaxed"
+          dir="rtl"
+        >
+          بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+        </motion.div>
+      </div>
+    );
   }
 
   if (showSurahList || !activeSurah) {
