@@ -1,12 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, orderBy, limit, getDocFromServer, FirestoreError } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, orderBy, limit, getDocFromServer, FirestoreError, setLogLevel } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
 
 export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
+
+// Suppress Firestore SDK warnings about offline mode
+setLogLevel('silent');
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
@@ -41,8 +44,16 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  
+  // Ignore offline errors to allow the app to work offline without crashing
+  if (errorMessage.includes('offline') || errorMessage.includes('Failed to get document because the client is offline')) {
+    console.warn('Firestore is offline. Operating in offline mode.');
+    return;
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -59,8 +70,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.warn('Firestore Error: ', JSON.stringify(errInfo));
+  // We use console.warn instead of console.error and avoid throwing to prevent red screens in offline mode
 }
 
 // Connection Test
@@ -69,7 +80,7 @@ async function testConnection() {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
     if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. ");
+      console.warn("Firestore is offline. The app will continue to work with cached data.");
     }
   }
 }

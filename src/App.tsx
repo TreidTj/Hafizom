@@ -41,8 +41,6 @@ interface AuthContextType {
 interface AudioContextType {
   selectedReciter: typeof RECITERS[0];
   setSelectedReciter: (reciter: typeof RECITERS[0]) => void;
-  selectedYear: string;
-  setSelectedYear: (year: string) => void;
   currentSurahIndex: number;
   setCurrentSurahIndex: (index: number) => void;
   isPlaying: boolean;
@@ -112,12 +110,12 @@ const NeumorphicButton = ({ children, onClick, className = "", active = false, d
   </button>
 );
 
-const NeumorphicIconButton = ({ icon: Icon, onClick, active = false, label }: { icon: any, onClick: () => void, active?: boolean, label?: string }) => (
-  <div className="flex flex-col items-center gap-1">
+const NeumorphicIconButton = ({ icon: Icon, onClick, active = false }: { icon: any, onClick: () => void, active?: boolean }) => (
+  <div className="flex flex-col items-center">
     <button 
       onClick={onClick}
       className={`
-        rounded-2xl p-4 transition-all duration-200
+        rounded-2xl p-4 transition-all duration-200 bg-bg
         ${active 
           ? 'shadow-[var(--shadow-btn-inset)] text-blue-600' 
           : 'shadow-[var(--shadow-flat)] text-gray-500'}
@@ -125,37 +123,21 @@ const NeumorphicIconButton = ({ icon: Icon, onClick, active = false, label }: { 
     >
       <Icon size={24} />
     </button>
-    {label && <span className={`text-[10px] font-medium uppercase tracking-wider ${active ? 'text-blue-600' : 'text-gray-400'}`}>{label}</span>}
   </div>
 );
 
+import QuranReader from './components/QuranReader';
+
 // --- Tab Components ---
 const QuranTab = () => {
-  const { user } = useContext(AuthContext);
-
-  const logReading = async (surahName: string, surahNumber: number) => {
-    if (!user) return;
-    const path = `users/${user.uid}/history`;
-    try {
-      await addDoc(collection(db, path), {
-        userId: user.uid,
-        surahName,
-        surahNumber,
-        timestamp: serverTimestamp()
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, path);
-    }
-  };
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="flex flex-col items-center justify-center min-h-[60vh] text-gray-400"
+      className="h-full"
     >
-      <p className="text-sm italic">Меню пока пусто</p>
+      <QuranReader />
     </motion.div>
   );
 };
@@ -167,7 +149,6 @@ const RecitationTab = () => {
   const { user } = useContext(AuthContext);
   const { 
     selectedReciter, setSelectedReciter, 
-    selectedYear, setSelectedYear,
     currentSurahIndex,
     isPlaying, setIsPlaying,
     repeatMode, setRepeatMode,
@@ -282,19 +263,6 @@ const RecitationTab = () => {
             </h3>
             <p className={`text-sm text-gray-400 flex items-center gap-2 ${isPhotoExpanded ? 'justify-center' : ''}`}>
               {selectedReciter.name}
-              {selectedReciter.id === 'yasser' && selectedReciter.years && (
-                <button 
-                  onClick={() => {
-                    const years = Object.keys(selectedReciter.years!);
-                    const currentIndex = years.indexOf(selectedYear);
-                    const nextIndex = (currentIndex + 1) % years.length;
-                    setSelectedYear(years[nextIndex]);
-                  }}
-                  className="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full hover:bg-blue-200 transition-colors"
-                >
-                  {selectedYear === 'studio' ? 'Studio' : selectedYear}
-                </button>
-              )}
             </p>
           </div>
         </div>
@@ -407,23 +375,23 @@ const RecitationTab = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 backdrop-blur-sm p-4 sm:p-6"
             onClick={() => setShowReciterModal(false)}
           >
             <motion.div 
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              className="bg-bg w-full max-w-md rounded-t-[3rem] p-8 space-y-6 shadow-2xl"
+              className="bg-bg w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl mb-safe"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-ink">Выберите чтеца</h3>
                 <NeumorphicButton className="p-2 rounded-full" onClick={() => setShowReciterModal(false)}>
-                  <Settings size={18} />
+                  <X size={18} />
                 </NeumorphicButton>
               </div>
-              <div className="grid gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="grid gap-3 max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                 {RECITERS.map((reciter) => (
                   <NeumorphicCard 
                     key={reciter.id} 
@@ -434,7 +402,7 @@ const RecitationTab = () => {
                       setShowReciterModal(false);
                     }}
                   >
-                    <div className="w-12 h-12 rounded-full bg-gray-200/20 overflow-hidden flex items-center justify-center shadow-sm">
+                    <div className="w-12 h-12 rounded-full bg-gray-200/20 overflow-hidden flex items-center justify-center shadow-sm shrink-0">
                       {reciter.image ? (
                         <img src={reciter.image} alt={reciter.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -445,24 +413,6 @@ const RecitationTab = () => {
                   </NeumorphicCard>
                 ))}
               </div>
-              {selectedReciter.id === 'yasser' && selectedReciter.years && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-bold text-gray-500 mb-2">Выберите год:</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {Object.keys(selectedReciter.years).map((year) => (
-                      <React.Fragment key={year}>
-                        <NeumorphicButton
-                          className={`p-2 text-xs w-full ${selectedYear === year ? 'text-blue-600' : 'text-ink'}`}
-                          active={selectedYear === year}
-                          onClick={() => setSelectedYear(year)}
-                        >
-                          {year === 'studio' ? 'Studio' : year}
-                        </NeumorphicButton>
-                      </React.Fragment>
-                    ))}
-                  </div>
-                </div>
-              )}
             </motion.div>
           </motion.div>
         )}
@@ -698,7 +648,6 @@ function AppContent() {
 
   // Audio State moved to AppContent for persistence
   const [selectedReciter, setSelectedReciter] = useState(RECITERS[0]);
-  const [selectedYear, setSelectedYear] = useState<string>('studio');
   const [currentSurahIndex, setCurrentSurahIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [repeatMode, setRepeatMode] = useState<'off' | 'one' | 'all'>('off');
@@ -711,9 +660,6 @@ function AppContent() {
 
   const getAudioUrl = (reciter: typeof RECITERS[0], index: number) => {
     const surahNumber = (index + 1).toString().padStart(3, '0');
-    if (reciter.id === 'yasser' && reciter.years && reciter.years[selectedYear]) {
-      return reciter.years[selectedYear].replace('{surah}', surahNumber);
-    }
     return `${reciter.server}${surahNumber}.mp3`;
   };
 
@@ -797,7 +743,7 @@ function AppContent() {
     } else {
       audio.pause();
     }
-  }, [isPlaying, selectedReciter, selectedYear, currentSurahIndex, handleNext, handlePrev]);
+  }, [isPlaying, selectedReciter, currentSurahIndex, handleNext, handlePrev]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -857,7 +803,6 @@ function AppContent() {
     <AuthContext.Provider value={{ user, loading, history, favorites }}>
       <AudioContext.Provider value={{ 
         selectedReciter, setSelectedReciter,
-        selectedYear, setSelectedYear,
         currentSurahIndex, setCurrentSurahIndex,
         isPlaying, setIsPlaying,
         repeatMode, setRepeatMode,
@@ -913,7 +858,7 @@ function AppContent() {
           />
 
           {/* Main Content */}
-          <main className="flex-1 p-6 pb-32 max-w-md mx-auto w-full">
+          <main className="flex-1 p-6 pb-48 max-w-md mx-auto w-full">
             <AnimatePresence mode="wait">
               {activeTab === 'quran' && <QuranTab key="quran" />}
               {activeTab === 'music' && <RecitationTab key="recitation" />}
@@ -922,7 +867,7 @@ function AppContent() {
           </main>
 
           {/* Mini Player for other tabs */}
-          {activeTab !== 'music' && (isPlaying || (currentTime > 0 && currentTime < duration)) && (
+          {activeTab === 'profile' && (isPlaying || (currentTime > 0 && currentTime < duration)) && (
             <motion.div 
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -986,28 +931,31 @@ function AppContent() {
           )}
 
           {/* Bottom Navigation */}
-          <nav className="fixed bottom-0 left-0 right-0 p-6 bg-bg/80 backdrop-blur-lg z-50">
-            <div className="max-w-md mx-auto">
-              <NeumorphicCard className="flex justify-around items-center py-4 px-2 rounded-[2rem]">
-                <NeumorphicIconButton 
-                  icon={Book} 
-                  label="Главная" 
-                  onClick={() => setActiveTab('quran')} 
-                  active={activeTab === 'quran'} 
-                />
-                <NeumorphicIconButton 
-                  icon={Music} 
-                  label="Коран" 
-                  onClick={() => setActiveTab('music')} 
-                  active={activeTab === 'music'} 
-                />
-                <NeumorphicIconButton 
-                  icon={User} 
-                  label="Профиль" 
-                  onClick={() => setActiveTab('profile')} 
-                  active={activeTab === 'profile'} 
-                />
-              </NeumorphicCard>
+          <nav className="fixed bottom-2 left-0 right-0 z-50 pointer-events-none px-6">
+            <div className="max-w-md mx-auto relative bg-bg rounded-[2rem] shadow-[var(--shadow-flat)] h-16 flex items-center justify-between px-2 pointer-events-auto">
+              {[
+                { id: 'quran', icon: Book },
+                { id: 'music', icon: Music },
+                { id: 'profile', icon: User }
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <div key={tab.id} className="relative flex-1 flex justify-center h-full items-center">
+                    <button
+                      onClick={() => setActiveTab(tab.id as 'quran' | 'music' | 'profile')}
+                      className={`
+                        transition-all duration-300 flex items-center justify-center rounded-full
+                        ${isActive 
+                          ? 'absolute -top-5 w-14 h-14 bg-bg shadow-[var(--shadow-flat)] text-blue-500' 
+                          : 'w-12 h-12 text-gray-400 hover:text-gray-600'}
+                      `}
+                    >
+                      <Icon size={isActive ? 24 : 24} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </nav>
         </NeumorphicContainer>

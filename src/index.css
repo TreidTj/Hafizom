@@ -1,8 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap');
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Hafs';
+  src: local('KFGQPC Uthmanic Script HAFS'), 
+       local('me_quran');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 @theme {
   --color-bg: var(--bg);
   --color-ink: var(--ink);
+  --font-arabic: 'Hafs', 'Amiri Quran', 'Traditional Arabic', serif;
 }
 
 :root {
