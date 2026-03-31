@@ -459,12 +459,10 @@ export default function QuranReader({ plan = 'free' }: QuranReaderProps) {
                 <div className={`w-12 h-12 rounded-full shadow-[var(--shadow-btn-inset)] flex items-center justify-center font-bold text-lg ${activeSurah?.number === surah.number ? 'text-blue-600' : 'text-blue-500'}`}>
                   {surah.number}
                 </div>
-                <div>
-                  <div className="font-bold text-ink text-lg">{surah.englishName}</div>
-                  <div className="text-sm text-gray-500">{surah.englishNameTranslation}</div>
-                </div>
               </div>
-              <div className="text-2xl font-arabic text-blue-600" dir="rtl">{surah.name}</div>
+              <div className="text-2xl font-arabic text-blue-600 flex-1 text-right pr-4" dir="rtl">
+                {surah.name.replace(/سُورَةُ\s+|سُورَةِ\s+|سورة\s+/g, '')}
+              </div>
             </div>
           ))}
         </div>
@@ -492,8 +490,10 @@ export default function QuranReader({ plan = 'free' }: QuranReaderProps) {
           <List size={24} />
         </button>
         <div className="text-center">
-          <h2 className="text-2xl font-arabic font-bold text-ink" dir="rtl">{activeSurah.name}</h2>
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Сура {activeSurah.number}</p>
+          <h2 className="text-2xl font-arabic font-bold text-ink" dir="rtl">
+            {activeSurah.name.replace(/سُورَةُ\s+|سُورَةِ\s+|سورة\s+/g, '')}
+          </h2>
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">{activeSurah.number}</p>
         </div>
         <div className="w-10"></div> {/* Spacer for balance */}
       </div>

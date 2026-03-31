@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
-import { Book, Mic, Music, User, Settings, Bell, Search, Play, Pause, SkipForward, SkipBack, LogOut, AlertCircle, Repeat, Shuffle, Repeat1, ArrowDown10, ArrowUp01, Sun, Moon, Edit2, Camera, Check, X, Download, Lock } from 'lucide-react';
+import { Book, Mic, Music, User, Settings, Bell, Search, Play, Pause, SkipForward, SkipBack, LogOut, AlertCircle, Repeat, Shuffle, Repeat1, ArrowDown10, ArrowUp01, Sun, Moon, Edit2, Camera, Check, X, Download, Lock, Mail, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   auth, 
@@ -15,6 +15,8 @@ import {
   onAuthStateChanged, 
   updateProfile,
   signInAnonymously,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   doc, 
   setDoc, 
   getDoc, 
@@ -104,10 +106,12 @@ const NeumorphicCard = ({ children, className = "", inset = false, onClick, ...p
   </div>
 );
 
-const NeumorphicButton = ({ children, onClick, className = "", active = false, disabled = false, inset = false }: { children: React.ReactNode, onClick?: (e: any) => void, className?: string, active?: boolean, disabled?: boolean, inset?: boolean }) => (
+const NeumorphicButton = ({ children, onClick, className = "", active = false, disabled = false, inset = false, type = "button", ...props }: { children: React.ReactNode, onClick?: (e: any) => void, className?: string, active?: boolean, disabled?: boolean, inset?: boolean, type?: "button" | "submit" | "reset", [key: string]: any }) => (
   <button 
     onClick={onClick}
     disabled={disabled}
+    type={type}
+    {...props}
     className={`
       rounded-2xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
       ${active || inset
@@ -219,7 +223,7 @@ const RecitationTab = () => {
       className="space-y-6"
     >
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-ink">Коран</h2>
+        <h2 className="text-2xl font-bold text-ink">Чтецов</h2>
         <NeumorphicButton className="p-1 rounded-full overflow-hidden w-12 h-12 flex items-center justify-center" onClick={() => setShowReciterModal(true)}>
           {selectedReciter.image ? (
             <img src={selectedReciter.image} alt={selectedReciter.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -519,6 +523,11 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
+
   useEffect(() => {
     if (user) {
       setNewName(user.displayName || "");
@@ -633,7 +642,50 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
       await signInAnonymously(auth);
     } catch (error: any) {
       console.error("Guest login failed", error);
-      setLoginError(`Ошибка входа как гость: ${error.message || "Неизвестная ошибка"}`);
+      if (error.code === 'auth/admin-restricted-operation') {
+        setLoginError("Вход как гость отключен в консоли Firebase. Пожалуйста, включите 'Anonymous Auth' в настройках проекта.");
+      } else {
+        setLoginError(`Ошибка входа как гость: ${error.message || "Неизвестная ошибка"}`);
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    setLoginError(null);
+    try {
+      if (isSignUp) {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        const user = result.user;
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: user.email,
+          createdAt: serverTimestamp(),
+          role: 'user',
+          plan: 'free'
+        }, { merge: true });
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      setShowEmailLogin(false);
+    } catch (error: any) {
+      console.error("Email auth failed", error);
+      if (error.code === 'auth/email-already-in-use') {
+        setLoginError("Этот email уже используется.");
+      } else if (error.code === 'auth/invalid-email') {
+        setLoginError("Некорректный email.");
+      } else if (error.code === 'auth/weak-password') {
+        setLoginError("Пароль слишком слабый (минимум 6 символов).");
+      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        setLoginError("Неверный email или пароль.");
+      } else {
+        setLoginError(`Ошибка: ${error.message || "Неизвестная ошибка"}`);
+      }
     } finally {
       setIsLoggingIn(false);
     }
@@ -919,28 +971,109 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
                 {loginError}
               </div>
             )}
-            <NeumorphicButton 
-              className="w-full py-4 px-4 text-blue-600 font-bold mt-4 flex items-center justify-center gap-2" 
-              onClick={handleLogin}
-              disabled={isLoggingIn}
-            >
-              {isLoggingIn ? (
-                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                "Войти через Google"
-              )}
-            </NeumorphicButton>
-            <NeumorphicButton 
-              className="w-full py-4 px-4 text-gray-500 font-bold flex items-center justify-center gap-2" 
-              onClick={handleGuestLogin}
-              disabled={isLoggingIn}
-            >
-              {isLoggingIn ? (
-                <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                "Войти как гость"
-              )}
-            </NeumorphicButton>
+
+            {!showEmailLogin ? (
+              <>
+                <NeumorphicButton 
+                  className="w-full py-4 px-4 text-blue-600 font-bold mt-4 flex items-center justify-center gap-2" 
+                  onClick={handleLogin}
+                  disabled={isLoggingIn}
+                >
+                  {isLoggingIn ? (
+                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <div className="w-5 h-5 flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+                      </div>
+                      Войти через Google
+                    </>
+                  )}
+                </NeumorphicButton>
+
+                <NeumorphicButton 
+                  className="w-full py-4 px-4 text-ink font-bold flex items-center justify-center gap-2" 
+                  onClick={() => setShowEmailLogin(true)}
+                  disabled={isLoggingIn}
+                >
+                  <Mail size={18} />
+                  Войти через Email
+                </NeumorphicButton>
+
+                <NeumorphicButton 
+                  className="w-full py-4 px-4 text-gray-500 font-bold flex items-center justify-center gap-2" 
+                  onClick={handleGuestLogin}
+                  disabled={isLoggingIn}
+                >
+                  {isLoggingIn ? (
+                    <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    "Войти как гость"
+                  )}
+                </NeumorphicButton>
+              </>
+            ) : (
+              <motion.form 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onSubmit={handleEmailAuth}
+                className="space-y-4 p-2"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-lg font-bold text-ink">{isSignUp ? 'Регистрация' : 'Вход по Email'}</h4>
+                  <button type="button" onClick={() => setShowEmailLogin(false)} className="text-gray-400 hover:text-gray-600">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-gray-400 ml-2">Email</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input 
+                      type="email" 
+                      required
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="example@mail.com"
+                      className="w-full bg-bg shadow-[var(--shadow-btn-inset)] rounded-xl pl-12 pr-4 py-3 text-ink focus:outline-none text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-gray-400 ml-2">Пароль</label>
+                  <div className="relative">
+                    <Key size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input 
+                      type="password" 
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-bg shadow-[var(--shadow-btn-inset)] rounded-xl pl-12 pr-4 py-3 text-ink focus:outline-none text-sm"
+                    />
+                  </div>
+                </div>
+
+                <NeumorphicButton type="submit" className="w-full py-4 text-blue-600 font-bold" disabled={isLoggingIn}>
+                  {isLoggingIn ? (
+                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  ) : (
+                    isSignUp ? 'Создать аккаунт' : 'Войти'
+                  )}
+                </NeumorphicButton>
+
+                <button 
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="w-full text-center text-xs text-gray-500 hover:text-blue-500 transition-colors"
+                >
+                  {isSignUp ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
+                </button>
+              </motion.form>
+            )}
           </div>
         )}
       </div>
@@ -1073,12 +1206,18 @@ function AppContent() {
       setUser(currentUser);
       if (currentUser) {
         // Fetch user plan and role from Firestore
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setPlan(data.plan || 'free');
-          setRole(data.role || 'user');
-        } else {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setPlan(data.plan || 'free');
+            setRole(data.role || 'user');
+          } else {
+            setPlan('free');
+            setRole('user');
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, `users/${currentUser.uid}`);
           setPlan('free');
           setRole('user');
         }
@@ -1193,6 +1332,7 @@ function AppContent() {
 
           {/* Main Content */}
           <main className="flex-1 p-6 pb-48 max-w-md mx-auto w-full">
+            <h1 className="sr-only">Путь к Хафизу - Слушайте Коран онлайн</h1>
             <AnimatePresence mode="wait">
               {activeTab === 'quran' && <QuranTab key="quran" />}
               {activeTab === 'music' && <RecitationTab key="recitation" />}

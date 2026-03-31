@@ -1,6 +1,6 @@
 {
-  "name": "Quron",
-  "description": "A spiritual and music application with a beautiful Neumorphic design, featuring Quran recitations, music, and user profiles.",
+  "name": "Путь к Хафизу",
+  "description": "Приложение для прослушивания Корана и духовного развития. Коран, чтение, Ясир аль-Доссари и другие шейхи на арабском и русском языках.",
   "requestFramePermissions": [
     "microphone"
   ]
