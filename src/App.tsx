@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
-import { Book, Mic, Music, User, Settings, Bell, Search, Play, Pause, SkipForward, SkipBack, LogOut, AlertCircle, Repeat, Shuffle, Repeat1, ArrowDown10, ArrowUp01, Sun, Moon, Edit2, Camera, Check, X, Download } from 'lucide-react';
+import { Book, Mic, Music, User, Settings, Bell, Search, Play, Pause, SkipForward, SkipBack, LogOut, AlertCircle, Repeat, Shuffle, Repeat1, ArrowDown10, ArrowUp01, Sun, Moon, Edit2, Camera, Check, X, Download, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   auth, 
@@ -14,6 +14,7 @@ import {
   signOut, 
   onAuthStateChanged, 
   updateProfile,
+  signInAnonymously,
   doc, 
   setDoc, 
   getDoc, 
@@ -36,6 +37,8 @@ interface AuthContextType {
   loading: boolean;
   history: any[];
   favorites: any[];
+  plan: 'free' | 'premium';
+  role: 'user' | 'admin';
 }
 
 interface AudioContextType {
@@ -62,7 +65,14 @@ interface AudioContextType {
   getAudioUrl: (reciter: typeof RECITERS[0], index: number) => string;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, history: [], favorites: [] });
+const AuthContext = createContext<AuthContextType>({ 
+  user: null, 
+  loading: true, 
+  history: [], 
+  favorites: [],
+  plan: 'free',
+  role: 'user'
+});
 const AudioContext = createContext<AudioContextType | null>(null);
 
 const useAudio = () => {
@@ -130,6 +140,7 @@ import QuranReader from './components/QuranReader';
 
 // --- Tab Components ---
 const QuranTab = () => {
+  const { plan } = useContext(AuthContext);
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -137,7 +148,7 @@ const QuranTab = () => {
       exit={{ opacity: 0, y: -20 }}
       className="h-full"
     >
-      <QuranReader />
+      <QuranReader plan={plan} />
     </motion.div>
   );
 };
@@ -146,7 +157,7 @@ import { SURAHS, RECITERS } from './constants';
 
 // --- Tab Components ---
 const RecitationTab = () => {
-  const { user } = useContext(AuthContext);
+  const { user, plan } = useContext(AuthContext);
   const { 
     selectedReciter, setSelectedReciter, 
     currentSurahIndex,
@@ -163,6 +174,7 @@ const RecitationTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showReciterModal, setShowReciterModal] = useState(false);
   const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const filteredSurahs = SURAHS.map((surah, index) => ({ surah, index }))
     .filter(({ surah, index }) => 
@@ -392,29 +404,98 @@ const RecitationTab = () => {
                 </NeumorphicButton>
               </div>
               <div className="grid gap-3 max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
-                {RECITERS.map((reciter) => (
-                  <NeumorphicCard 
-                    key={reciter.id} 
-                    className={`p-4 flex items-center gap-4 cursor-pointer ${selectedReciter.id === reciter.id ? 'bg-blue-50/10' : ''}`}
-                    inset={selectedReciter.id === reciter.id}
-                    onClick={() => {
-                      setSelectedReciter(reciter);
-                      setShowReciterModal(false);
-                    }}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-gray-200/20 overflow-hidden flex items-center justify-center shadow-sm shrink-0">
-                      {reciter.image ? (
-                        <img src={reciter.image} alt={reciter.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <User size={24} className="text-gray-400" />
+                {RECITERS.map((reciter) => {
+                  const isLocked = plan === 'free' && reciter.id !== 'yasser';
+                  return (
+                    <NeumorphicCard 
+                      key={reciter.id} 
+                      className={`p-4 flex items-center justify-between cursor-pointer ${selectedReciter.id === reciter.id ? 'bg-blue-50/10' : ''}`}
+                      inset={selectedReciter.id === reciter.id}
+                      onClick={() => {
+                        if (isLocked) {
+                          setShowPremiumModal(true);
+                        } else {
+                          setSelectedReciter(reciter);
+                          setShowReciterModal(false);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gray-200/20 overflow-hidden flex items-center justify-center shadow-sm shrink-0">
+                          {reciter.image ? (
+                            <img src={reciter.image} alt={reciter.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <User size={24} className="text-gray-400" />
+                          )}
+                        </div>
+                        <span className={`font-medium ${selectedReciter.id === reciter.id ? 'text-blue-600' : 'text-ink'}`}>{reciter.name}</span>
+                      </div>
+                      {isLocked && (
+                        <div className="p-2 bg-gray-100 rounded-xl text-gray-400">
+                          <Lock size={16} />
+                        </div>
                       )}
-                    </div>
-                    <span className={`font-medium ${selectedReciter.id === reciter.id ? 'text-blue-600' : 'text-ink'}`}>{reciter.name}</span>
-                  </NeumorphicCard>
-                ))}
+                    </NeumorphicCard>
+                  );
+                })}
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Premium Modal */}
+      <AnimatePresence>
+        {showPremiumModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPremiumModal(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-bg w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-600" />
+              
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 rounded-full bg-blue-50 shadow-[var(--shadow-btn-inset)] flex items-center justify-center text-blue-600">
+                  <Music size={40} />
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-ink">Премиум функция</h3>
+                  <p className="text-gray-500 leading-relaxed">
+                    Выбор этого чтеца доступен только в <b>Premium</b> тарифе. 
+                    Откройте доступ ко всем 20+ чтецам навсегда!
+                  </p>
+                </div>
+
+                <div className="w-full space-y-3">
+                  <button
+                    onClick={() => {
+                      window.open('https://t.me/muua3', '_blank');
+                      setShowPremiumModal(false);
+                    }}
+                    className="w-full py-4 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 active:scale-95 transition-transform"
+                  >
+                    Купить Premium за 10 000 ₽
+                  </button>
+                  <button
+                    onClick={() => setShowPremiumModal(false)}
+                    className="w-full py-4 rounded-2xl bg-bg text-gray-500 font-medium shadow-[var(--shadow-flat)] active:scale-95 transition-transform"
+                  >
+                    Позже
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </motion.div>
@@ -422,7 +503,7 @@ const RecitationTab = () => {
 };
 
 const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTheme: () => void }) => {
-  const { user, history, favorites } = useContext(AuthContext);
+  const { user, history, favorites, plan, role } = useContext(AuthContext);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   
@@ -432,12 +513,45 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
   const [isUpdating, setIsUpdating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminUsername, setAdminUsername] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+
   useEffect(() => {
     if (user) {
       setNewName(user.displayName || "");
       setNewPhoto(user.photoURL || null);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (isAdminLoggedIn && role === 'admin') {
+      const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+        setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      return () => unsub();
+    }
+  }, [isAdminLoggedIn, role]);
+
+  const handleAdminLogin = () => {
+    if (adminUsername === "Manu" && adminPassword === "Hgkhmzs2005") {
+      setIsAdminLoggedIn(true);
+      setShowAdminLogin(false);
+      setAdminPassword("");
+    } else {
+      setLoginError("Неверный логин или пароль администратора");
+    }
+  };
+
+  const updateUserPlan = async (userId: string, newPlan: 'free' | 'premium') => {
+    try {
+      await setDoc(doc(db, 'users', userId), { plan: newPlan }, { merge: true });
+    } catch (error) {
+      console.error("Failed to update user plan", error);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -496,12 +610,30 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
         role: 'user'
       }, { merge: true });
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        setLoginError("Окно закрыто. Пожалуйста, попробуйте еще раз.");
-      } else {
-        setLoginError("Ошибка входа. Пожалуйста, проверьте подключение.");
-      }
       console.error("Login failed", error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setLoginError("Окно входа было закрыто. Пожалуйста, попробуйте еще раз.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setLoginError("Этот домен не разрешен для входа. Пожалуйста, обратитесь к администратору.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setLoginError("Всплывающее окно заблокировано браузером. Пожалуйста, разрешите всплывающие окна.");
+      } else {
+        setLoginError(`Ошибка входа: ${error.message || "Неизвестная ошибка"}`);
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    setLoginError(null);
+    try {
+      await signInAnonymously(auth);
+    } catch (error: any) {
+      console.error("Guest login failed", error);
+      setLoginError(`Ошибка входа как гость: ${error.message || "Неизвестная ошибка"}`);
     } finally {
       setIsLoggingIn(false);
     }
@@ -603,13 +735,181 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
               </div>
             ) : (
               <>
-                <h3 className="text-xl font-bold text-ink">{user.displayName}</h3>
-                <p className="text-gray-400 text-sm">{user.email}</p>
+                <h3 className="text-xl font-bold text-ink">{user.isAnonymous ? "Гость" : user.displayName}</h3>
+                <p className="text-gray-400 text-sm mb-1">{user.isAnonymous ? "Анонимный доступ" : user.email}</p>
+                <div className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${plan === 'premium' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                  {plan === 'premium' ? 'Premium' : 'Free Plan'}
+                </div>
               </>
             )}
           </div>
         )}
       </div>
+
+      {user && !isAdminLoggedIn && (
+        <div className="space-y-6">
+          <h3 className="text-lg font-bold text-ink px-2">Тарифы</h3>
+          <div className="grid gap-4">
+            <NeumorphicCard className={`p-6 border-2 transition-all ${plan === 'free' ? 'border-blue-500/30' : 'border-transparent'}`}>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-lg font-bold text-ink">Бесплатно</h4>
+                  <p className="text-xs text-gray-500">Базовый доступ</p>
+                </div>
+                <div className="text-xl font-black text-ink">0 ₽</div>
+              </div>
+              <ul className="space-y-2 mb-6">
+                <li className="text-xs text-gray-600 flex items-center gap-2">
+                  <Check size={14} className="text-green-500" /> Один чтец (Ясир аль-Досари)
+                </li>
+                <li className="text-xs text-gray-600 flex items-center gap-2">
+                  <Check size={14} className="text-green-500" /> Ручное открытие аятов
+                </li>
+                <li className="text-xs text-gray-400 flex items-center gap-2">
+                  <X size={14} className="text-red-400" /> Работа с микрофоном
+                </li>
+              </ul>
+              <NeumorphicButton 
+                className="w-full py-3 text-sm font-bold" 
+                inset={plan === 'free'}
+                disabled={plan === 'free'}
+              >
+                {plan === 'free' ? 'Активно' : 'Выбрать'}
+              </NeumorphicButton>
+            </NeumorphicCard>
+
+            <NeumorphicCard className={`p-6 border-2 transition-all ${plan === 'premium' ? 'border-blue-500/30' : 'border-transparent'}`}>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-lg font-bold text-blue-600">Premium</h4>
+                  <p className="text-xs text-gray-500">Пожизненный доступ</p>
+                </div>
+                <div className="text-xl font-black text-blue-600">10 000 ₽</div>
+              </div>
+              <ul className="space-y-2 mb-6">
+                <li className="text-xs text-gray-600 flex items-center gap-2">
+                  <Check size={14} className="text-green-500" /> Все чтецы (20+)
+                </li>
+                <li className="text-xs text-gray-600 flex items-center gap-2">
+                  <Check size={14} className="text-green-500" /> Работа с микрофоном
+                </li>
+                <li className="text-xs text-gray-600 flex items-center gap-2">
+                  <Check size={14} className="text-green-500" /> Приоритетная поддержка
+                </li>
+              </ul>
+              <a 
+                href="https://t.me/muua3" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <NeumorphicButton 
+                  className="w-full py-3 text-sm font-bold text-blue-600"
+                  inset={plan === 'premium'}
+                >
+                  {plan === 'premium' ? 'Активно' : 'Активировать'}
+                </NeumorphicButton>
+              </a>
+            </NeumorphicCard>
+          </div>
+        </div>
+      )}
+
+      {isAdminLoggedIn && role === 'admin' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center px-2">
+            <h3 className="text-lg font-bold text-ink">Управление пользователями</h3>
+            <NeumorphicButton className="p-2 text-red-500" onClick={() => setIsAdminLoggedIn(false)}>
+              Выйти
+            </NeumorphicButton>
+          </div>
+          <div className="grid gap-3">
+            {allUsers.map(u => (
+              <NeumorphicCard key={u.id} className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
+                    {u.photoURL && <img src={u.photoURL} alt="" className="w-full h-full object-cover" />}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-ink">{u.displayName || 'Без имени'}</div>
+                    <div className="text-[10px] text-gray-400">{u.email}</div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <NeumorphicButton 
+                    className={`px-3 py-1 text-[10px] font-bold ${u.plan === 'free' ? 'bg-blue-500 text-white' : 'text-gray-400'}`}
+                    onClick={() => updateUserPlan(u.id, 'free')}
+                  >
+                    Free
+                  </NeumorphicButton>
+                  <NeumorphicButton 
+                    className={`px-3 py-1 text-[10px] font-bold ${u.plan === 'premium' ? 'bg-blue-500 text-white' : 'text-gray-400'}`}
+                    onClick={() => updateUserPlan(u.id, 'premium')}
+                  >
+                    Premium
+                  </NeumorphicButton>
+                </div>
+              </NeumorphicCard>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isAdminLoggedIn && role === 'admin' && (
+        <div className="flex justify-center pt-8">
+          <button 
+            onClick={() => setShowAdminLogin(true)}
+            className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors"
+          >
+            Админ-панель
+          </button>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {showAdminLogin && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-6"
+            onClick={() => setShowAdminLogin(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-bg w-full max-w-xs rounded-3xl p-8 space-y-6 shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-center text-ink">Вход для админа</h3>
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-gray-400 ml-2">Логин</label>
+                  <input 
+                    type="text" 
+                    value={adminUsername}
+                    onChange={e => setAdminUsername(e.target.value)}
+                    className="w-full bg-bg shadow-[var(--shadow-btn-inset)] rounded-xl px-4 py-3 text-ink focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-gray-400 ml-2">Пароль</label>
+                  <input 
+                    type="password" 
+                    value={adminPassword}
+                    onChange={e => setAdminPassword(e.target.value)}
+                    className="w-full bg-bg shadow-[var(--shadow-btn-inset)] rounded-xl px-4 py-3 text-ink focus:outline-none"
+                  />
+                </div>
+                <NeumorphicButton className="w-full py-4 text-blue-600 font-bold" onClick={handleAdminLogin}>
+                  Войти
+                </NeumorphicButton>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="space-y-4">
         {!user && (
@@ -630,6 +930,17 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
                 "Войти через Google"
               )}
             </NeumorphicButton>
+            <NeumorphicButton 
+              className="w-full py-4 px-4 text-gray-500 font-bold flex items-center justify-center gap-2" 
+              onClick={handleGuestLogin}
+              disabled={isLoggingIn}
+            >
+              {isLoggingIn ? (
+                <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                "Войти как гость"
+              )}
+            </NeumorphicButton>
           </div>
         )}
       </div>
@@ -641,6 +952,8 @@ const ProfileTab = ({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleThe
 function AppContent() {
   const [activeTab, setActiveTab] = useState<'quran' | 'music' | 'profile'>('quran');
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [plan, setPlan] = useState<'free' | 'premium'>('free');
+  const [role, setRole] = useState<'user' | 'admin'>('user');
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -756,8 +1069,23 @@ function AppContent() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        // Fetch user plan and role from Firestore
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setPlan(data.plan || 'free');
+          setRole(data.role || 'user');
+        } else {
+          setPlan('free');
+          setRole('user');
+        }
+      } else {
+        setPlan('free');
+        setRole('user');
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -806,7 +1134,7 @@ function AppContent() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, history, favorites }}>
+    <AuthContext.Provider value={{ user, loading, history, favorites, plan, role }}>
       <AudioContext.Provider value={{ 
         selectedReciter, setSelectedReciter,
         currentSurahIndex, setCurrentSurahIndex,

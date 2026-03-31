@@ -14,6 +14,8 @@ service cloud.firestore {
     //   - email: string (required, email format)
     //   - photoURL: string (optional)
     //   - createdAt: timestamp (required)
+    //   - plan: string (required, 'free' or 'premium')
+    //   - role: string (required, 'user' or 'admin')
     //
     // Collection: users/{userId}/history
     // Document ID: auto-generated
@@ -49,8 +51,12 @@ service cloud.firestore {
       return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
-    function isValidUrl(url) {
-      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    function isValidPhoto(photo) {
+      return photo is string && (
+        photo.matches("^https://.*") || 
+        photo.matches("^http://.*") || 
+        photo.matches("^data:image/.*")
+      ) && photo.size() < 2000000; // 2MB limit for base64
     }
 
     function hasOnlyAllowedFields(fields) {
@@ -68,12 +74,14 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'role']) &&
+      return hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'role', 'plan']) &&
              data.uid == request.auth.uid &&
              data.email is string && isValidEmail(data.email) &&
              (data.displayName == null || (data.displayName is string && data.displayName.size() < 100)) &&
-             (data.photoURL == null || isValidUrl(data.photoURL)) &&
-             data.createdAt is timestamp;
+             (data.photoURL == null || isValidPhoto(data.photoURL)) &&
+             data.createdAt is timestamp &&
+             data.role in ['user', 'admin'] &&
+             data.plan in ['free', 'premium'];
     }
 
     function isValidHistory(data, userId) {
@@ -102,9 +110,19 @@ service cloud.firestore {
       // Users can only read their own profile (PII protection)
       allow read: if isOwner(userId) || isAdmin();
       
-      // Users can create/update their own profile
-      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
-      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+      // Users can create their own profile with 'free' plan and 'user' role
+      allow create: if isOwner(userId) && 
+                      isValidUser(request.resource.data) && 
+                      request.resource.data.plan == 'free' && 
+                      request.resource.data.role == 'user';
+
+      // Users can update their own profile but NOT their plan or role
+      // Admins can update anything
+      allow update: if (isOwner(userId) && 
+                       isValidUser(request.resource.data) && 
+                       request.resource.data.plan == resource.data.plan && 
+                       request.resource.data.role == resource.data.role) || 
+                      isAdmin();
 
       match /history/{historyId} {
         allow read: if isOwner(userId) || isAdmin();
